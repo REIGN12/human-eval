@@ -35,6 +35,14 @@ def estimate_pass_at_k(
 
     return np.array([estimator(int(n), int(c), k) for n, c in zip(num_samples_it, num_correct)])
 
+def true_pass_at_k(
+    passed:np.ndarray,k:int
+)->np.ndarray:
+    # passed is a boolean array of whether the sample passed or not
+    # pass_at_k means whether any of the first k samples passed 
+    pass_at_k = np.any(passed[:,:k],axis=1).astype(float)
+    pass_at_k_ratio = np.mean(pass_at_k)
+    return pass_at_k_ratio
 
 def evaluate_functional_correctness(
     sample_file: str,
@@ -77,17 +85,24 @@ def evaluate_functional_correctness(
 
     # Calculate pass@k.
     total, correct = [], []
+    passed_l = []
     for result in results.values():
         result.sort()
         passed = [r[1]["passed"] for r in result]
         total.append(len(passed))
         correct.append(sum(passed))
+        passed_l.append(passed)
     total = np.array(total)
     correct = np.array(correct)
+    passed_arr = np.array(passed_l)
 
     ks = k
-    pass_at_k = {f"pass@{k}": estimate_pass_at_k(total, correct, k).mean()
-                 for k in ks if (total >= k).all()}
+    # pass_at_k = {f"pass@{k}": estimate_pass_at_k(total, correct, k).mean()
+    #              for k in ks if (total >= k).all()}
+    # import ipdb; ipdb.set_trace()
+    pass_at_k = {
+        f"pass@{k}": true_pass_at_k(passed_arr,k) for k in ks if (total >= k).all()
+    }
 
     # Finally, save the results in one file:
     def combine_results():
